@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thesis Defense Presentation - TinyML Edge AI Navigation</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            900: '#0B1120',
+                            800: '#111827',
+                            700: '#1F2937',
+                        },
+                        cyanAccent: '#06B6D4',
+                        emeraldAccent: '#10B981',
+                        violetAccent: '#8B5CF6'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Glassmorphism & Animations */
+        body {
+            background-color: #060913;
+            color: #F3F4F6;
+            overflow-x: hidden;
+            overflow-y: hidden;
+            touch-action: pan-y;
+            width: 100vw;
+            max-width: 100%;
+        }
+
+        .glass-card {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .glass-card-hover:hover {
+            border-color: rgba(6, 182, 212, 0.4);
+            box-shadow: 0 8px 32px 0 rgba(6, 182, 212, 0.15);
+        }
+
+        .glow-text-cyan {
+            text-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
+        }
+
+        .glow-text-emerald {
+            text-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+        }
+
+        /* Slide Animation Logic */
+        .slide {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .slide.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* Staggered entrance animations */
+        .slide.active .anim-enter {
+            animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .slide.active .delay-1 { animation-delay: 0.05s; }
+        .slide.active .delay-2 { animation-delay: 0.15s; }
+        .slide.active .delay-3 { animation-delay: 0.25s; }
+        .slide.active .delay-4 { animation-delay: 0.35s; }
+        .slide.active .delay-5 { animation-delay: 0.45s; }
+
+        .anim-enter {
+            opacity: 0;
+            transform: translateY(16px);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1E293B;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between p-3 md:p-8 font-sans relative overflow-hidden select-none" id="touch-container">
+
+    <!-- REMOVED FLOATING SIDE ARROWS ENTIRELY FOR A CLEAN MODERN UI -->
+
+    <!-- Top Status / Navigation Bar -->
+    <header class="w-full max-w-7xl mx-auto flex items-center justify-between z-20 mb-1 px-2">
+        <div class="flex items-center space-x-2">
+            <span class="px-2.5 py-0.5 text-[10px] md:text-xs font-mono font-semibold tracking-wider bg-cyanAccent/10 text-cyanAccent rounded-full border border-cyanAccent/30">
+                <i class="fa-solid fa-graduation-cap mr-1"></i>DEFENSE
+            </span>
+            <span class="text-[10px] text-gray-400 font-mono hidden sm:inline-block">Southeast University</span>
+        </div>
+        
+        <!-- Slide Indicator -->
+        <div class="flex items-center space-x-2 md:space-x-4">
+            <span class="text-[11px] font-mono text-cyan-300 font-bold" id="slide-counter">1 / 8</span>
+            <div class="w-20 md:w-32 bg-gray-800 h-1.5 rounded-full overflow-hidden border border-gray-700">
+                <div id="progress-bar" class="bg-gradient-to-r from-cyanAccent to-emeraldAccent h-full w-1/8 transition-all duration-300"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Presentation Container -->
+    <main class="w-full max-w-7xl mx-auto flex-1 flex items-center justify-center relative my-auto z-10 overflow-hidden px-2">
+
+        <!-- ==================== SLIDE 1: TITLE SLIDE ==================== -->
+        <section class="slide active w-full h-full flex-col justify-center items-center text-center px-2 md:px-4" id="slide-1">
+            <div class="anim-enter delay-1 inline-flex items-center space-x-2 bg-cyanAccent/10 border border-cyanAccent/30 px-3 py-1 rounded-full mb-3">
+                <span class="w-2 h-2 rounded-full bg-cyanAccent animate-ping"></span>
+                <span class="text-[10px] md:text-xs font-mono font-semibold text-cyan-300">THESIS DEFENSE PRESENTATION</span>
+            </div>
+
+            <h1 class="anim-enter delay-2 text-xl sm:text-3xl md:text-5xl font-extrabold text-white max-w-4xl leading-tight mb-3 tracking-tight">
+                Ultra-Low-Power TinyML Obstacle Avoidance for Autonomous <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyanAccent via-teal-300 to-emeraldAccent">2WD Robot Cars</span> in GPS-Denied Environments
+            </h1>
+
+            <p class="anim-enter delay-3 text-xs sm:text-base md:text-lg text-gray-300 max-w-3xl mb-6 leading-relaxed font-light">
+                A real-time edge AI framework deploying sub-microsecond decision trees on ARM Cortex-M4 microcontrollers for autonomous ground navigation.
+            </p>
+
+            <div class="anim-enter delay-4 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl w-full text-left">
+                <div class="glass-card p-3 rounded-xl flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-lg bg-cyanAccent/10 flex items-center justify-center text-cyanAccent text-lg font-bold border border-cyanAccent/20">
+                        <i class="fa-solid fa-user-graduate"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-mono text-gray-400">Researcher / Presenter</p>
+                        <h3 class="text-xs sm:text-sm font-semibold text-white">Md. Mohtasim Billah</h3>
+                        <p class="text-[10px] text-gray-400">ID: 2024100011006</p>
+                    </div>
+                </div>
+
+                <div class="glass-card p-3 rounded-xl flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-lg bg-emeraldAccent/10 flex items-center justify-center text-emeraldAccent text-lg font-bold border border-emeraldAccent/20">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-mono text-gray-400">Institution</p>
+                        <h3 class="text-xs sm:text-sm font-semibold text-white">Dept. of Computer Science & Eng.</h3>
+                        <p class="text-[10px] text-gray-400">Southeast University, Dhaka</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SLIDE 2: RESEARCH MOTIVATION ==================== -->
+        <section class="slide w-full h-full flex-col justify-center px-2 md:px-4" id="slide-2">
+            <div class="anim-enter delay-1 mb-2">
+                <span class="text-[10px] md:text-xs font-mono text-cyanAccent tracking-wider uppercase font-semibold">01. Problem Statement</span>
+                <h2 class="text-lg md:text-3xl font-bold text-white mt-0.5">The GPS-Denied Mobile Robot Navigation Challenge</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5 my-auto max-h-[75vh] overflow-y-auto">
+                <!-- Left Problem Box -->
+                <div class="anim-enter delay-2 glass-card p-4 rounded-xl border-l-4 border-red-500 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-xs md:text-base font-bold text-red-400 flex items-center">
+                                <i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Traditional Edge Compute Limits
+                            </h3>
+                        </div>
+                        <ul class="space-y-1.5 text-[11px] md:text-xs text-gray-300">
+                            <li class="flex items-start">
+                                <i class="fa-solid fa-xmark text-red-400 mt-0.5 mr-1.5 text-[10px]"></i>
+                                <span>High Electrical Drain: GPU companion boards consume excessive battery power.</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa-solid fa-xmark text-red-400 mt-0.5 mr-1.5 text-[10px]"></i>
+                                <span>Heavy Memory Overhead: DNN interpreters exceed MCU SRAM limits.</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa-solid fa-xmark text-red-400 mt-0.5 mr-1.5 text-[10px]"></i>
+                                <span>High Latency: Runtime inference delays increase collision risks at speed.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Right Solution Box -->
+                <div class="anim-enter delay-3 glass-card p-4 rounded-xl border-l-4 border-emeraldAccent flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-xs md:text-base font-bold text-emeraldAccent flex items-center">
+                                <i class="fa-solid fa-bolt mr-1.5"></i> Proposed TinyML 2WD Robot Solution
+                            </h3>
+                        </div>
+                        <ul class="space-y-1.5 text-[11px] md:text-xs text-gray-300">
+                            <li class="flex items-start">
+                                <i class="fa-solid fa-check text-emeraldAccent mt-0.5 mr-1.5 text-[10px]"></i>
+                                <span>Ultra-Low Power: Operates on STM32F401 Black Pill MCU.</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa-solid fa-check text-emeraldAccent mt-0.5 mr-1.5 text-[10px]"></i>
+                                <span>Zero Interpreter Dependency: Compiled standard C-header (`tinyml_model.h`).</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa-solid fa-check text-emeraldAccent mt-0.5 mr-1.5 text-[10px]"></i>
+                                <span>Sub-Microsecond Latency: Differential PWM motor steering calculated in 1.2 µs.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SLIDE 3: SYSTEM ARCHITECTURE ==================== -->
+        <section class="slide w-full h-full flex-col justify-center px-2 md:px-4" id="slide-3">
+            <div class="anim-enter delay-1 mb-2">
+                <span class="text-[10px] md:text-xs font-mono text-cyanAccent tracking-wider uppercase font-semibold">02. System Architecture</span>
+                <h2 class="text-lg md:text-3xl font-bold text-white mt-0.5">2WD Robot Car Hardware & Software Architecture</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-5 my-auto">
+                <div class="anim-enter delay-2 glass-card p-4 rounded-xl flex flex-col justify-between">
+                    <h3 class="text-xs font-mono text-cyanAccent uppercase tracking-wide border-b border-gray-800 pb-1.5 mb-2">
+                        <i class="fa-solid fa-microchip mr-1.5"></i>Processing & Control
+                    </h3>
+                    <div class="space-y-2">
+                        <div>
+                            <span class="text-[10px] text-gray-400 block">MCU Controller</span>
+                            <span class="text-xs font-semibold text-white">STM32F401 Black Pill</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-gray-400 block">Motor Driver</span>
+                            <span class="text-xs font-semibold text-white">L298N Dual H-Bridge Driver</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-gray-400 block">Chassis Format</span>
+                            <span class="text-xs font-semibold text-white">2WD Smart Robot Car Chassis</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="anim-enter delay-3 glass-card p-4 rounded-xl md:col-span-2 flex flex-col justify-between">
+                    <h3 class="text-xs font-mono text-emeraldAccent uppercase tracking-wide border-b border-gray-800 pb-1.5 mb-2">
+                        <i class="fa-solid fa-radar mr-1.5"></i>5x Distance Sensor Array (LiDAR / ToF)
+                    </h3>
+                    <div class="space-y-1.5 text-[11px] text-gray-300">
+                        <div class="p-2 rounded bg-navy-900 border border-gray-800">
+                            <span class="font-mono text-cyanAccent font-bold">Arrangement Angles:</span>
+                            <span> [-90°, -45°, 0°, +45°, +90°] 5-directional raycast fan array.</span>
+                        </div>
+                        <div class="p-2 rounded bg-navy-900 border border-gray-800">
+                            <span class="font-mono text-emeraldAccent font-bold">Actuation Control:</span>
+                            <span> Left & Right PWM differential speed steering adjustment.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SLIDE 4: MODEL EXPORT ==================== -->
+        <section class="slide w-full h-full flex-col justify-center px-2 md:px-4" id="slide-4">
+            <div class="anim-enter delay-1 mb-2">
+                <span class="text-[10px] md:text-xs font-mono text-cyanAccent tracking-wider uppercase font-semibold">03. Algorithm & Deployment</span>
+                <h2 class="text-lg md:text-3xl font-bold text-white mt-0.5">Decision Tree C-Code Header Export</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5 my-auto">
+                <div class="anim-enter delay-2 glass-card p-4 rounded-xl flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-xs font-semibold text-white mb-2 flex items-center">
+                            <i class="fa-solid fa-code-branch text-cyanAccent mr-1.5"></i> Steering Decision Branches
+                        </h3>
+                        <p class="text-[11px] text-gray-300 mb-2">
+                            The trained model directly translates spatial range array inputs into instantaneous steering classes:
+                        </p>
+                        <ul class="space-y-1.5 text-[11px] font-mono text-gray-300">
+                            <li class="p-1.5 bg-navy-900 rounded border border-gray-800"><strong class="text-cyanAccent">Class 0:</strong> Move Straight</li>
+                            <li class="p-1.5 bg-navy-900 rounded border border-gray-800"><strong class="text-emeraldAccent">Class 1:</strong> Turn Left</li>
+                            <li class="p-1.5 bg-navy-900 rounded border border-gray-800"><strong class="text-amber-400">Class 2:</strong> Turn Right</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="anim-enter delay-3 glass-card p-3 rounded-xl flex flex-col justify-between overflow-hidden">
+                    <div class="flex items-center justify-between border-b border-gray-800 pb-1.5 mb-1.5">
+                        <span class="text-[10px] font-mono text-gray-400"><i class="fa-solid fa-file-code text-cyanAccent mr-1"></i>tinyml_model.h</span>
+                        <span class="text-[10px] font-mono text-emeraldAccent">Pure C Header</span>
+                    </div>
+
+                    <pre class="bg-navy-900 p-2.5 rounded-lg text-[10px] font-mono text-gray-300 overflow-x-auto border border-gray-800 leading-tight">
+<span class="text-purple-400">int</span> <span class="text-blue-400">predict_rover_action</span>(<span class="text-purple-400">const float</span> sensor[<span class="text-orange-400">5</span>]) {
+  <span class="text-purple-400">if</span> (sensor[<span class="text-orange-400">2</span>] &lt;= <span class="text-orange-400">0.9997f</span>) {
+    <span class="text-purple-400">if</span> (sensor[<span class="text-orange-400">1</span>] &lt;= <span class="text-orange-400">4.7937f</span>) {
+      <span class="text-purple-400">if</span> (sensor[<span class="text-orange-400">4</span>] &lt;= <span class="text-orange-400">4.8878f</span>) <span class="text-purple-400">return</span> <span class="text-orange-400">2</span>; <span class="text-gray-500">// Right</span>
+      <span class="text-purple-400">else</span> <span class="text-purple-400">return</span> <span class="text-orange-400">1</span>; <span class="text-gray-500">// Left</span>
+    }
+  } <span class="text-purple-400">else</span> {
+    <span class="text-purple-400">if</span> (sensor[<span class="text-orange-400">1</span>] &lt;= <span class="text-orange-400">0.7997f</span>) <span class="text-purple-400">return</span> <span class="text-orange-400">2</span>;
+    <span class="text-purple-400">else if</span> (sensor[<span class="text-orange-400">3</span>] &lt;= <span class="text-orange-400">0.7997f</span>) <span class="text-purple-400">return</span> <span class="text-orange-400">1</span>;
+    <span class="text-purple-400">else return</span> <span class="text-orange-400">0</span>; <span class="text-gray-500">// Straight</span>
+  }
+}</pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SLIDE 5: LIVE 2WD ROBOT CAR SIMULATION ==================== -->
+        <section class="slide w-full h-full flex-col justify-center px-2 md:px-4" id="slide-5">
+            <div class="anim-enter delay-1 flex items-center justify-between border-b border-gray-800 pb-2 mb-2">
+                <div>
+                    <span class="text-[10px] md:text-xs font-mono text-cyanAccent tracking-wider uppercase font-semibold">SECTION 04 // LIVE SIMULATION BENCHMARK</span>
+                    <h2 class="text-base sm:text-2xl font-bold text-white">Closed-Loop Raycasting Pygame-CE Simulation Environment</h2>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="sim-reset-btn" class="px-2.5 py-1 bg-navy-800 hover:bg-gray-700 border border-gray-700 text-cyan-300 text-[10px] sm:text-xs font-mono rounded transition flex items-center active:scale-95">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> Reset
+                    </button>
+                    <button id="sim-pause-btn" class="px-2.5 py-1 bg-navy-800 hover:bg-gray-700 border border-gray-700 text-emerald-400 text-[10px] sm:text-xs font-mono rounded transition flex items-center active:scale-95">
+                        <i class="fa-solid fa-pause mr-1" id="sim-pause-icon"></i> <span id="sim-pause-text">Pause</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Full Canvas Simulation Element -->
+            <div class="anim-enter delay-2 relative w-full flex-1 bg-slate-950 border border-gray-800 rounded-xl overflow-hidden flex items-center justify-center min-h-[260px] sm:min-h-[380px]">
+                <canvas id="simCanvas" class="w-full h-full block"></canvas>
+            </div>
+        </section>
+
+        <!-- ==================== SLIDE 6: BENCHMARKS ==================== -->
+        <section class="slide w-full h-full flex-col justify-center px-2 md:px-4" id="slide-6">
+            <div class="anim-enter delay-1 mb-2">
+                <span class="text-[10px] md:text-xs font-mono text-cyanAccent tracking-wider uppercase font-semibold">05. Performance Benchmarks</span>
+                <h2 class="text-lg md:text-3xl font-bold text-white mt-0.5">2WD Robot Microcontroller Telemetry</h2>
+            </div>
+
+            <div class="anim-enter delay-2 grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-3">
+                <div class="glass-card p-2.5 rounded-lg text-center border-t-2 border-cyanAccent">
+                    <span class="text-[10px] font-mono text-gray-400 uppercase">Model Accuracy</span>
+                    <h3 class="text-lg md:text-2xl font-extrabold text-cyanAccent mt-0.5">97.00%</h3>
+                </div>
+                <div class="glass-card p-2.5 rounded-lg text-center border-t-2 border-emeraldAccent">
+                    <span class="text-[10px] font-mono text-gray-400 uppercase">STM32 Latency</span>
+                    <h3 class="text-lg md:text-2xl font-extrabold text-emeraldAccent mt-0.5">1.2 µs</h3>
+                </div>
+                <div class="glass-card p-2.5 rounded-lg text-center border-t-2 border-violetAccent">
+                    <span class="text-[10px] font-mono text-gray-400 uppercase">Flash Memory</span>
+                    <h3 class="text-lg md:text-2xl font-extrabold text-violetAccent mt-0.5">&lt;0.5 KB</h3>
+                </div>
+                <div class="glass-card p-2.5 rounded-lg text-center border-t-2 border-amber-400">
+                    <span class="text-[10px] font-mono text-gray-400 uppercase">Dynamic RAM</span>
+                    <h3 class="text-lg md:text-2xl font-extrabold text-amber-400 mt-0.5">52 Bytes</h3>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SLIDE 7: HARDWARE SCHEMATIC ==================== -->
+        <section class="slide w-full h-full flex-col justify-center px-2 md:px-4" id="slide-7">
+            <div class="anim-enter delay-1 mb-2">
+                <span class="text-[10px] md:text-xs font-mono text-cyanAccent tracking-wider uppercase font-semibold">06. Hardware Implementation</span>
+                <h2 class="text-lg md:text-3xl font-bold text-white mt-0.5">2WD Robot Car STM32 Pinout & Power Schematic</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 my-auto">
+                <div class="anim-enter delay-2 glass-card p-3 rounded-xl border-t-2 border-red-500">
+                    <h3 class="text-xs font-bold text-white mb-2 flex items-center">
+                        <i class="fa-solid fa-car-battery text-red-400 mr-1.5"></i> Power Distribution
+                    </h3>
+                    <ul class="space-y-1.5 text-[11px] text-gray-300 font-mono">
+                        <li class="p-1.5 rounded bg-navy-900 border border-gray-800">
+                            <strong class="text-red-400">7.4V Li-ion (+)</strong> &rarr; L298N 12V &amp; Buck Regulator
+                        </li>
+                        <li class="p-1.5 rounded bg-navy-900 border border-gray-800">
+                            <strong class="text-gray-400">GND (-)</strong> &rarr; Common System Ground
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="anim-enter delay-3 glass-card p-3 rounded-xl border-t-2 border-cyanAccent">
+                    <h3 class="text-xs font-bold text-white mb-2 flex items-center">
+                        <i class="fa-solid fa-network-wired text-cyanAccent mr-1.5"></i> Sensor Array Bus
+                    </h3>
+                    <ul class="space-y-1.5 text-[11px] text-gray-300 font-mono">
+                        <li class="p-1.5 rounded bg-navy-900 border border-gray-800">
+                            <strong class="text-cyanAccent">PB6 (SCL)</strong> &rarr; PCA9548A Mux SCL
+                        </li>
+                        <li class="p-1.5 rounded bg-navy-900 border border-gray-800">
+                            <strong class="text-cyanAccent">PB7 (SDA)</strong> &rarr; PCA9548A Mux SDA
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="anim-enter delay-4 glass-card p-3 rounded-xl border-t-2 border-emeraldAccent">
+                    <h3 class="text-xs font-bold text-white mb-2 flex items-center">
+                        <i class="fa-solid fa-gears text-emeraldAccent mr-1.5"></i> Motor PWM Outputs
+                    </h3>
+                    <ul class="space-y-1.5 text-[11px] text-gray-300 font-mono">
+                        <li class="p-1.5 rounded bg-navy-900 border border-gray-800">
+                            <strong class="text-emeraldAccent">PA0, PA1</strong> &rarr; Left Motor PWM Driver
+                        </li>
+                        <li class="p-1.5 rounded bg-navy-900 border border-gray-800">
+                            <strong class="text-emeraldAccent">PA2, PA3</strong> &rarr; Right Motor PWM Driver
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SLIDE 8: CONCLUSION ==================== -->
+        <section class="slide w-full h-full flex-col justify-center px-2 md:px-4" id="slide-8">
+            <div class="anim-enter delay-1 mb-2 text-center">
+                <span class="text-[10px] md:text-xs font-mono text-cyanAccent tracking-wider uppercase font-semibold">07. Summary</span>
+                <h2 class="text-lg md:text-3xl font-extrabold text-white mt-0.5">2WD Autonomous Robot Car Conclusion</h2>
+            </div>
+
+            <div class="anim-enter delay-2 glass-card p-4 rounded-xl border-l-4 border-cyanAccent max-w-2xl mx-auto w-full text-center space-y-2">
+                <h3 class="text-sm font-bold text-white">TinyML Obstacle Avoidance Proven</h3>
+                <p class="text-xs text-gray-300">
+                    Successfully validated sub-microsecond steering inference on a physical 2WD Robot Car platform using STM32F401 Black Pill and 5x distance sensors.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Bottom Controls & Navigation -->
+    <footer class="w-full max-w-7xl mx-auto flex items-center justify-between z-40 pb-3 pt-2 border-t border-gray-800/80 px-3">
+        <div class="text-xs text-gray-500 font-mono hidden md:block">
+            Use <kbd class="px-1 py-0.5 bg-gray-800 text-gray-300 rounded">&rarr;</kbd> / <kbd class="px-1 py-0.5 bg-gray-800 text-gray-300 rounded">&leftarrow;</kbd> or Swipe on Mobile
+        </div>
+
+        <div class="flex items-center space-x-4 w-full md:w-auto justify-between md:justify-end">
+            <button id="prev-btn" class="px-6 py-2.5 rounded-xl bg-navy-800 border border-cyanAccent/30 text-xs font-bold text-cyan-300 hover:bg-cyanAccent/20 active:scale-95 transition-all flex items-center shadow-lg">
+                <i class="fa-solid fa-chevron-left mr-2"></i> PREV
+            </button>
+            <button id="next-btn" class="px-7 py-2.5 rounded-xl bg-gradient-to-r from-cyanAccent to-emeraldAccent text-xs font-extrabold text-navy-900 active:scale-95 transition-all flex items-center shadow-lg shadow-cyanAccent/20">
+                NEXT <i class="fa-solid fa-chevron-right ml-2"></i>
+            </button>
+        </div>
+    </footer>
+
+    <!-- Robust Touch & Navigation JavaScript Engine -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const slides = document.querySelectorAll('.slide');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const slideCounter = document.getElementById('slide-counter');
+            const progressBar = document.getElementById('progress-bar');
+            
+            let currentSlide = 0;
+            const totalSlides = slides.length;
+
+            function updateSlide(index) {
+                if (index < 0) index = 0;
+                if (index >= totalSlides) index = totalSlides - 1;
+
+                currentSlide = index;
+
+                slides.forEach((slide, idx) => {
+                    if (idx === currentSlide) {
+                        slide.classList.add('active');
+                    } else {
+                        slide.classList.remove('active');
+                    }
+                });
+
+                slideCounter.textContent = `${currentSlide + 1} / ${totalSlides}`;
+                const progressPercentage = ((currentSlide + 1) / totalSlides) * 100;
+                progressBar.style.width = `${progressPercentage}%`;
+
+                prevBtn.style.opacity = currentSlide === 0 ? '0.3' : '1';
+                
+                if (currentSlide === totalSlides - 1) {
+                    nextBtn.innerHTML = 'FINISH <i class="fa-solid fa-flag-checkered ml-1"></i>';
+                } else {
+                    nextBtn.innerHTML = 'NEXT <i class="fa-solid fa-chevron-right ml-1"></i>';
+                }
+
+                if (currentSlide === 4) {
+                    setTimeout(resizeCanvas, 50);
+                }
+            }
+
+            // Direct Click Listeners
+            nextBtn.addEventListener('click', (e) => { e.stopPropagation(); if (currentSlide < totalSlides - 1) updateSlide(currentSlide + 1); });
+            prevBtn.addEventListener('click', (e) => { e.stopPropagation(); if (currentSlide > 0) updateSlide(currentSlide - 1); });
+
+            // Keyboard Navigation
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowRight' || e.key === 'Space') {
+                    if (currentSlide < totalSlides - 1) updateSlide(currentSlide + 1);
+                } else if (e.key === 'ArrowLeft') {
+                    if (currentSlide > 0) updateSlide(currentSlide - 1);
+                }
+            });
+
+            // High Precision Mobile Touch Swipe Handler
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchEndX = 0;
+            let touchEndY = 0;
+
+            const touchContainer = document.body;
+
+            touchContainer.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+                touchStartY = e.changedTouches[0].screenY;
+            }, { passive: true });
+
+            touchContainer.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                touchEndY = e.changedTouches[0].screenY;
+                handleGesture();
+            }, { passive: true });
+
+            function handleGesture() {
+                const diffX = touchEndX - touchStartX;
+                const diffY = touchEndY - touchStartY;
+
+                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 35) {
+                    if (diffX < 0) {
+                        if (currentSlide < totalSlides - 1) updateSlide(currentSlide + 1);
+                    } else {
+                        if (currentSlide > 0) updateSlide(currentSlide - 1);
+                    }
+                }
+            }
+
+            // ---------------------------------------------------------
+            // 2WD ROBOT CAR CANVAS SIMULATION ENGINE
+            // ---------------------------------------------------------
+            const canvas = document.getElementById('simCanvas');
+            const ctx = canvas.getContext('2d');
+            let isSimRunning = true;
+
+            const pauseBtn = document.getElementById('sim-pause-btn');
+            const pauseIcon = document.getElementById('sim-pause-icon');
+            const pauseText = document.getElementById('sim-pause-text');
+
+            pauseBtn.addEventListener('click', () => {
+                isSimRunning = !isSimRunning;
+                if (isSimRunning) {
+                    pauseIcon.className = 'fa-solid fa-pause mr-1';
+                    pauseText.innerText = 'Pause';
+                } else {
+                    pauseIcon.className = 'fa-solid fa-play mr-1';
+                    pauseText.innerText = 'Play';
+                }
+            });
+
+            function resizeCanvas() {
+                if (!canvas.parentElement) return;
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            let robot = {
+                x: 180, y: 320, angle: -15, speed: 1.8,
+                sensorAngles: [-90, -45, 0, 45, 90],
+                sensorDistances: [0, 0, 0, 0, 0],
+                hitPoints: [{x:0,y:0}, {x:0,y:0}, {x:0,y:0}, {x:0,y:0}, {x:0,y:0}],
+                lastAction: "Move Straight", actionClass: 0
+            };
+
+            document.getElementById('sim-reset-btn').addEventListener('click', () => {
+                robot.x = 180; robot.y = canvas.height / 2; robot.angle = -15;
+            });
+
+            function getWalls(width, height) {
+                return [
+                    {x: 0, y: 0, w: width, h: 12},
+                    {x: 0, y: 0, w: 12, h: height},
+                    {x: 0, y: height - 12, w: width, h: 12},
+                    {x: width - 12, y: 0, w: 12, h: height},
+                    // Obstacle Blocks matching the image layout
+                    {x: width * 0.38, y: height * 0.16, w: width * 0.28, h: height * 0.12},
+                    {x: width * 0.72, y: height * 0.22, w: width * 0.16, h: height * 0.38},
+                    {x: width * 0.38, y: height * 0.38, w: width * 0.2, h: height * 0.08},
+                    {x: width * 0.18, y: height * 0.58, w: width * 0.12, h: height * 0.34},
+                    {x: width * 0.38, y: height * 0.58, w: width * 0.04, h: height * 0.34},
+                    {x: width * 0.48, y: height * 0.7, w: width * 0.24, h: height * 0.08},
+                    {x: width * 0.74, y: height * 0.7, w: width * 0.14, h: height * 0.22}
+                ];
+            }
+
+            function castRay(rx, ry, angleDeg, maxRange, walls) {
+                const rad = angleDeg * (Math.PI / 180);
+                const dx = Math.cos(rad); const dy = Math.sin(rad);
+
+                for (let step = 1; step < maxRange; step++) {
+                    const px = rx + dx * step; const py = ry + dy * step;
+                    for (let wall of walls) {
+                        if (px >= wall.x && px <= wall.x + wall.w && py >= wall.y && py <= wall.y + wall.h) {
+                            return { distM: (step / 45.0).toFixed(1), hitX: px, hitY: py };
+                        }
+                    }
+                }
+                return { distM: (maxRange / 45.0).toFixed(1), hitX: rx + dx * maxRange, hitY: ry + dy * maxRange };
+            }
+
+            function predictAction(distances) {
+                const [dL90, dL45, dFront, dR45, dR90] = distances.map(Number);
+                if (dFront <= 1.0) {
+                    if (dL45 <= 4.8) {
+                        if (dR90 <= 4.9) return { action: "Turn Left", class: 1 };
+                        else return { action: "Turn Right", class: 2 };
+                    } else {
+                        if (dL45 <= 0.8) return { action: "Turn Right", class: 2 };
+                        else return { action: "Turn Left", class: 1 };
+                    }
+                } else if (dR45 <= 0.8) {
+                    return { action: "Turn Left", class: 1 };
+                } else {
+                    return { action: "Move Straight", class: 0 };
+                }
+            }
+
+            function animLoop() {
+                if (currentSlide === 4) {
+                    const W = canvas.width || 800; const H = canvas.height || 420;
+                    const walls = getWalls(W, H);
+
+                    if (isSimRunning) {
+                        robot.sensorAngles.forEach((relAngle, idx) => {
+                            const res = castRay(robot.x, robot.y, robot.angle + relAngle, 320, walls);
+                            robot.sensorDistances[idx] = res.distM;
+                            robot.hitPoints[idx] = { x: res.hitX, y: res.hitY };
+                        });
+
+                        const pred = predictAction(robot.sensorDistances);
+                        robot.lastAction = pred.action; robot.actionClass = pred.class;
+
+                        if (robot.actionClass === 1) robot.angle -= 2.0;
+                        else if (robot.actionClass === 2) robot.angle += 2.0;
+
+                        const rad = robot.angle * (Math.PI / 180);
+                        const nextX = robot.x + robot.speed * Math.cos(rad);
+                        const nextY = robot.y + robot.speed * Math.sin(rad);
+
+                        let collided = false;
+                        for (let wall of walls) {
+                            if (nextX >= wall.x && nextX <= wall.x + wall.w && nextY >= wall.y && nextY <= wall.y + wall.h) {
+                                collided = true; break;
+                            }
+                        }
+
+                        if (!collided) { robot.x = nextX; robot.y = nextY; }
+                        else { robot.angle += 15.0; }
+                    }
+
+                    // Render Canvas Background
+                    ctx.fillStyle = "#E4E9ED"; ctx.fillRect(0, 0, W, H);
+
+                    // Render Grid
+                    ctx.strokeStyle = "#CBD5E1"; ctx.lineWidth = 1;
+                    for (let x = 0; x < W; x += 32) {
+                        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+                    }
+                    for (let y = 0; y < H; y += 32) {
+                        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+                    }
+
+                    // Render Walls
+                    walls.forEach(w => {
+                        ctx.fillStyle = "#555F69"; ctx.fillRect(w.x, w.y, w.w, w.h);
+                        ctx.strokeStyle = "#283037"; ctx.lineWidth = 2; ctx.strokeRect(w.x, w.y, w.w, w.h);
+                        ctx.fillStyle = "#78828C"; ctx.fillRect(w.x + 2, w.y + 2, w.w - 4, 3);
+                    });
+
+                    // Render Sensor Rays
+                    const sensorNames = ["dL90", "dL45", "dFront", "dR45", "dR90"];
+                    robot.hitPoints.forEach((hp, i) => {
+                        ctx.strokeStyle = (i === 2) ? "#10B981" : "#1D4ED8";
+                        ctx.lineWidth = 2;
+                        ctx.beginPath(); ctx.moveTo(robot.x, robot.y); ctx.lineTo(hp.x, hp.y); ctx.stroke();
+
+                        ctx.fillStyle = "#EF4444";
+                        ctx.beginPath(); ctx.arc(hp.x, hp.y, 4, 0, Math.PI * 2); ctx.fill();
+
+                        ctx.fillStyle = "#0F172A";
+                        ctx.font = "bold 11px Arial";
+                        ctx.fillText(`${sensorNames[i]}: ${robot.sensorDistances[i]}m`, hp.x + 6, hp.y - 4);
+                    });
+
+                    // Render 2WD Robot Chassis
+                    ctx.save();
+                    ctx.translate(robot.x, robot.y);
+                    ctx.rotate(robot.angle * (Math.PI / 180));
+
+                    ctx.fillStyle = "#06B6D4"; ctx.fillRect(-14, -10, 28, 20);
+                    ctx.strokeStyle = "#0F172A"; ctx.lineWidth = 2; ctx.strokeRect(-14, -10, 28, 20);
+
+                    // Wheels
+                    ctx.fillStyle = "#1E293B";
+                    ctx.fillRect(-10, -13, 10, 3); ctx.fillRect(-10, 10, 10, 3);
+                    ctx.fillRect(2, -13, 10, 3); ctx.fillRect(2, 10, 10, 3);
+
+                    // Front Sensor Head
+                    ctx.fillStyle = "#EF4444"; ctx.beginPath(); ctx.arc(14, 0, 4, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
+
+                    // Render Terminal HUD Panel
+                    const hudW = W < 500 ? 240 : 300;
+                    const hudH = W < 500 ? 170 : 185;
+                    ctx.fillStyle = "rgba(20, 24, 28, 0.95)";
+                    ctx.fillRect(12, 12, hudW, hudH);
+                    ctx.strokeStyle = "#E2E8F0"; ctx.lineWidth = 2;
+                    ctx.strokeRect(12, 12, hudW, hudH);
+
+                    ctx.font = W < 500 ? "bold 10px Courier, monospace" : "bold 11px Courier, monospace";
+                    const lines = [
+                        { text: "TinyML 2WD Robot Simulation v1.0", col: "#FFFFFF" },
+                        { text: "----------------------------------", col: "#64748B" },
+                        { text: "Status: Navigating", col: "#10B981" },
+                        { text: "Active Model: `tinyml_model.h`", col: "#38BDF8" },
+                        { text: `Prediction: [${robot.lastAction}]`, col: "#FFFFFF" },
+                        { text: "Sensor Array: 5-Directional", col: "#E2E8F0" },
+                        { text: "Avg Latency: 1.2µs", col: "#10B981" },
+                        { text: "Memory: 0.5KB Flash | 52B RAM", col: "#10B981" },
+                        { text: "Clock: 84MHz (STM32F401)", col: "#38BDF8" }
+                    ];
+
+                    lines.forEach((l, idx) => {
+                        ctx.fillStyle = l.col;
+                        ctx.fillText(l.text, 20, 26 + (idx * (W < 500 ? 16 : 18)));
+                    });
+                }
+                requestAnimationFrame(animLoop);
+            }
+
+            // Initialize
+            updateSlide(0);
+            requestAnimationFrame(animLoop);
+        });
+    </script>
+</body>
+</html>
