@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Edge-AI Autonomous Drone Navigation | Thesis Defense Deck</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts & Font Awesome Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com/">
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            bg: '#0B0F17',
+                            card: '#131A26',
+                            border: '#1E293B',
+                            accent: '#00F0FF',
+                            green: '#10B981',
+                            blue: '#3B82F6',
+                            red: '#EF4444',
+                            text: '#E2E8F0',
+                            subtext: '#94A3B8'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0B0F17;
+            color: #E2E8F0;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            touch-action: pan-y;
+        }
+
+        .slide {
+            display: none;
+            height: calc(100dvh - 120px);
+            overflow-y: auto;
+        }
+
+        .slide.active {
+            display: flex;
+        }
+
+        /* KEYFRAME ANIMATIONS FOR ELEMENTS */
+        @keyframes fadeSlideUp {
+            0% {
+                opacity: 0;
+                transform: translateY(24px) scale(0.98);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes fadeInDown {
+            0% {
+                opacity: 0;
+                transform: translateY(-16px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.94);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .slide.active .anim-fade-up {
+            animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+
+        .slide.active .anim-fade-down {
+            animation: fadeInDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+
+        .slide.active .anim-scale-in {
+            animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+
+        .slide.active .delay-1 { animation-delay: 0.1s; }
+        .slide.active .delay-2 { animation-delay: 0.2s; }
+        .slide.active .delay-3 { animation-delay: 0.35s; }
+        .slide.active .delay-4 { animation-delay: 0.5s; }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #0B0F17; }
+        ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00F0FF; }
+
+        .cyber-card-hover { transition: all 0.3s ease; }
+        .cyber-card-hover:hover {
+            border-color: rgba(0, 240, 255, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 240, 255, 0.15);
+        }
+
+        .glow-accent { text-shadow: 0 0 12px rgba(0, 240, 255, 0.4); }
+        .glow-green { text-shadow: 0 0 12px rgba(16, 185, 129, 0.4); }
+    </style>
+</head>
+<body class="h-screen flex flex-col justify-between select-none">
+
+    <!-- TOP HEADER -->
+    <header class="h-14 border-b border-cyber-border bg-cyber-bg/90 backdrop-blur px-4 sm:px-6 flex items-center justify-between z-20">
+        <div class="flex items-center space-x-2 sm:space-x-3">
+            <span class="px-2 sm:px-2.5 py-0.5 sm:py-1 bg-cyber-accent/10 border border-cyber-accent/30 text-cyber-accent text-[10px] sm:text-xs font-mono rounded font-semibold">IEEE DEFENSE</span>
+            <span class="text-[10px] sm:text-xs font-mono text-cyber-subtext truncate max-w-[170px] sm:max-w-none">THESIS PRESENTATION • DEPT. OF CSE, SOUTHEAST UNIVERSITY</span>
+        </div>
+        
+        <div class="text-[10px] sm:text-xs font-mono text-cyber-accent flex items-center space-x-2">
+            <span id="current-time">00:00:00</span>
+            <span class="text-cyber-border hidden sm:inline">|</span>
+            <span class="text-cyber-subtext hidden sm:inline">Nav: <kbd class="px-1.5 py-0.5 bg-cyber-card border border-cyber-border rounded text-cyber-accent">←</kbd> <kbd class="px-1.5 py-0.5 bg-cyber-card border border-cyber-border rounded text-cyber-accent">→</kbd></span>
+        </div>
+    </header>
+
+    <!-- MAIN SLIDE CONTAINER -->
+    <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-8 py-2 sm:py-4 relative z-10 flex flex-col justify-center">
+
+        <!-- SLIDE 1: TITLE -->
+        <section class="slide flex-col justify-center items-center text-center space-y-4 sm:space-y-6 active" id="slide-1">
+            <div class="anim-fade-down inline-flex items-center space-x-2 px-3 py-1 bg-blue-500/10 border border-blue-500/30 rounded-full text-blue-400 text-[11px] sm:text-xs font-mono">
+                <i class="fa-solid fa-microchip animate-pulse"></i>
+                <span>ACADEMIC THESIS DEFENSE PRESENTATION</span>
+            </div>
+            
+            <h1 class="anim-fade-up delay-1 text-2xl sm:text-5xl font-extrabold tracking-tight max-w-4xl leading-tight text-white">
+                Edge-AI Autonomous Drone Navigation: <br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyber-accent via-blue-400 to-emerald-400 glow-accent">
+                    A TinyML Approach for Real-Time 2D Obstacle Avoidance
+                </span>
+            </h1>
+
+            <p class="anim-fade-up delay-2 text-cyber-subtext text-xs sm:text-lg max-w-2xl font-light">
+                Sub-microsecond Machine Learning Decision Inference on Resource-Constrained Microcontrollers (STM32F401) using Pygame-CE Simulation Validation.
+            </p>
+
+            <div class="anim-scale-in delay-3 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full max-w-4xl mt-2 sm:mt-6 text-left">
+                <div class="p-3 sm:p-4 bg-cyber-card border border-cyber-accent/40 rounded-xl relative overflow-hidden cyber-card-hover">
+                    <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-cyber-accent/5 rounded-full blur-xl"></div>
+                    <p class="text-[10px] sm:text-xs font-mono text-cyber-accent font-semibold uppercase">CANDIDATE / PRESENTER</p>
+                    <p class="text-sm sm:text-base font-bold text-white mt-0.5">Md. Mohtasim Billah</p>
+                    <p class="text-[11px] sm:text-xs text-cyber-subtext font-mono">ID: <span class="text-white font-semibold">2024100011006</span></p>
+                    <p class="text-[11px] sm:text-xs text-emerald-400 font-mono">Dept. of Computer Science & Engineering</p>
+                    <p class="text-[11px] sm:text-xs text-blue-400 font-mono mt-1 flex items-center space-x-1">
+                        <i class="fa-solid fa-building-columns text-[10px]"></i>
+                        <span>Southeast University</span>
+                    </p>
+                    <p class="text-[10px] sm:text-[11px] text-cyber-subtext font-mono mt-1 border-t border-cyber-border pt-1">
+                        <i class="fa-regular fa-envelope text-[10px] text-cyber-accent mr-1"></i>2024100011006@seu.edu.bd
+                    </p>
+                </div>
+                <div class="p-3 sm:p-4 bg-cyber-card border border-cyber-border rounded-xl cyber-card-hover">
+                    <p class="text-[10px] sm:text-xs font-mono text-cyber-subtext uppercase">SUPERVISOR & COMMITTEE</p>
+                    <p class="text-sm sm:text-base font-bold text-white mt-0.5">Academic Thesis Board</p>
+                    <p class="text-[11px] sm:text-xs text-cyber-subtext font-mono">Defense Examination Committee</p>
+                    <p class="text-[11px] sm:text-xs text-cyber-accent font-mono mt-1">Department of CSE</p>
+                    <p class="text-[11px] sm:text-xs text-cyber-subtext font-mono">Southeast University</p>
+                </div>
+                <div class="p-3 sm:p-4 bg-cyber-card border border-cyber-border rounded-xl cyber-card-hover">
+                    <p class="text-[10px] sm:text-xs font-mono text-cyber-subtext uppercase">TARGET ARCHITECTURE</p>
+                    <p class="text-xs sm:text-sm font-semibold font-mono text-emerald-400 mt-0.5">STM32F401 (ARM Cortex-M4)</p>
+                    <p class="text-[11px] sm:text-xs text-cyber-subtext font-mono">84 MHz | 0.5KB Flash Memory</p>
+                    <p class="text-[11px] sm:text-xs text-purple-400 font-mono mt-1">TinyML Decision Tree (Depth 5)</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 2: PROBLEM STATEMENT -->
+        <section class="slide flex-col justify-center space-y-4 sm:space-y-6" id="slide-2">
+            <div class="anim-fade-down border-b border-cyber-border pb-2 sm:pb-3">
+                <span class="text-[10px] sm:text-xs font-mono text-cyber-accent uppercase tracking-wider">SECTION 01 // MOTIVATION & PROBLEM</span>
+                <h2 class="text-xl sm:text-3xl font-bold text-white mt-0.5">Edge Robotics Challenges & Resource Constraints</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <div class="anim-fade-up delay-1 p-4 sm:p-5 bg-cyber-card border border-cyber-border rounded-xl space-y-3 cyber-card-hover">
+                    <div class="flex items-center space-x-3 text-red-400">
+                        <i class="fa-solid fa-triangle-exclamation text-lg sm:text-xl"></i>
+                        <h3 class="font-bold text-base sm:text-lg">Traditional Drone Flight Limits</h3>
+                    </div>
+                    <ul class="space-y-2 sm:space-y-3 text-xs sm:text-sm text-cyber-subtext">
+                        <li class="flex items-start space-x-2">
+                            <i class="fa-solid fa-xmark text-red-400 mt-1"></i>
+                            <span><strong>High Power Consumption:</strong> GPU/Companion Computers drain flight battery rapidly.</span>
+                        </li>
+                        <li class="flex items-start space-x-2">
+                            <i class="fa-solid fa-xmark text-red-400 mt-1"></i>
+                            <span><strong>Cloud Latency Lag:</strong> Offloading sensor data introduces unpredictable 50-200ms latency spikes.</span>
+                        </li>
+                        <li class="flex items-start space-x-2">
+                            <i class="fa-solid fa-xmark text-red-400 mt-1"></i>
+                            <span><strong>Deep Model Overhead:</strong> CNNs exceed MCU SRAM capacity (500KB+ required).</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="anim-fade-up delay-2 p-4 sm:p-5 bg-cyber-card border border-cyber-accent/40 rounded-xl space-y-3 relative overflow-hidden cyber-card-hover">
+                    <div class="flex items-center space-x-3 text-cyber-accent">
+                        <i class="fa-solid fa-lightbulb text-lg sm:text-xl"></i>
+                        <h3 class="font-bold text-base sm:text-lg">The Proposed TinyML Solution</h3>
+                    </div>
+                    <ul class="space-y-2 sm:space-y-3 text-xs sm:text-sm text-cyber-subtext">
+                        <li class="flex items-start space-x-2">
+                            <i class="fa-solid fa-check text-emerald-400 mt-1"></i>
+                            <span><strong>Sub-Microsecond Latency:</strong> Decision Tree (Depth 5) computes steering in just <strong class="text-white">1.2µs</strong>.</span>
+                        </li>
+                        <li class="flex items-start space-x-2">
+                            <i class="fa-solid fa-check text-emerald-400 mt-1"></i>
+                            <span><strong>Ultra-Low Memory Footprint:</strong> Fits into <strong class="text-emerald-400">52 Bytes RAM</strong> and <strong class="text-emerald-400">0.5 KB Flash</strong>.</span>
+                        </li>
+                        <li class="flex items-start space-x-2">
+                            <i class="fa-solid fa-check text-emerald-400 mt-1"></i>
+                            <span><strong>Deterministic Safety:</strong> Zero cloud dependency with 100% autonomous edge execution.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 3: SYSTEM ARCHITECTURE -->
+        <section class="slide flex-col justify-center space-y-4 sm:space-y-6" id="slide-3">
+            <div class="anim-fade-down border-b border-cyber-border pb-2 sm:pb-3">
+                <span class="text-[10px] sm:text-xs font-mono text-cyber-accent uppercase tracking-wider">SECTION 02 // SYSTEM ARCHITECTURE</span>
+                <h2 class="text-xl sm:text-3xl font-bold text-white mt-0.5">Hardware Target vs. Software Stack Specifications</h2>
+            </div>
+
+            <div class="anim-scale-in delay-1 overflow-x-auto border border-cyber-border rounded-xl bg-cyber-card cyber-card-hover">
+                <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                    <thead>
+                        <tr class="border-b border-cyber-border bg-cyber-bg/50 text-cyber-accent font-mono text-[10px] sm:text-xs uppercase">
+                            <th class="p-3 sm:p-4">Component Layer</th>
+                            <th class="p-3 sm:p-4">Specification / Tech Stack</th>
+                            <th class="p-3 sm:p-4">Operational Role & Performance Target</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-cyber-border text-cyber-subtext">
+                        <tr>
+                            <td class="p-3 sm:p-4 font-semibold text-white font-mono">Microcontroller Target</td>
+                            <td class="p-3 sm:p-4 text-emerald-400 font-mono">STM32F401 (ARM Cortex-M4)</td>
+                            <td class="p-3 sm:p-4">84 MHz Core Frequency, 512KB Flash, 96KB SRAM target execution hardware</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 sm:p-4 font-semibold text-white font-mono">Machine Learning Model</td>
+                            <td class="p-3 sm:p-4 text-cyber-accent font-mono">Quantized Decision Tree (Depth 5)</td>
+                            <td class="p-3 sm:p-4">Real-time inference converted directly to standalone C header (<code class="text-white">tinyml_model.h</code>)</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 sm:p-4 font-semibold text-white font-mono">Input Feature Array</td>
+                            <td class="p-3 sm:p-4 font-mono text-blue-400">5-Directional Raycast LiDAR</td>
+                            <td class="p-3 sm:p-4">Distance metrics array: [dL90, dL45, dFront, dR45, dR90] in meters</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 sm:p-4 font-semibold text-white font-mono">Output Control Classes</td>
+                            <td class="p-3 sm:p-4 font-mono text-white">Class 0: Straight | Class 1: Left | Class 2: Right</td>
+                            <td class="p-3 sm:p-4">Direct PWM motor steering outputs for quadcopter attitude adjustments</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SLIDE 4: MODEL OPTIMIZATION -->
+        <section class="slide flex-col justify-center space-y-4" id="slide-4">
+            <div class="anim-fade-down border-b border-cyber-border pb-2">
+                <span class="text-[10px] sm:text-xs font-mono text-cyber-accent uppercase tracking-wider">SECTION 03 // MODEL DESIGN & EXPORT</span>
+                <h2 class="text-xl sm:text-3xl font-bold text-white mt-0.5">Decision Tree Pruning & <code class="text-cyber-accent">tinyml_model.h</code> Header Export</h2>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="anim-fade-up delay-1 p-3 sm:p-4 bg-cyber-card border border-cyber-border rounded-xl space-y-2 sm:space-y-3 cyber-card-hover">
+                    <h3 class="text-xs sm:text-sm font-mono text-cyber-accent uppercase">Depth-5 Decision Rules Architecture</h3>
+                    <div class="space-y-1 sm:space-y-2 text-[11px] sm:text-xs font-mono text-cyber-subtext bg-cyber-bg p-2.5 sm:p-3 rounded-lg border border-cyber-border overflow-x-auto">
+                        <p class="text-white">// Primary Collision Avoidance Branch</p>
+                        <p><span class="text-blue-400">IF</span> (d_Front ≤ 0.9997m) {</p>
+                        <p class="pl-4"><span class="text-blue-400">IF</span> (d_L45 ≤ 4.7937m) {</p>
+                        <p class="pl-8"><span class="text-blue-400">IF</span> (d_R90 ≤ 4.8878m) <span class="text-emerald-400">RETURN "Turn Left" [Class 1]</span>;</p>
+                        <p class="pl-8"><span class="text-blue-400">ELSE</span> <span class="text-emerald-400">RETURN "Turn Right" [Class 2]</span>;</p>
+                        <p class="pl-4">}</p>
+                        <p>} <span class="text-blue-400">ELSE</span> {</p>
+                        <p class="pl-4"><span class="text-cyber-accent">RETURN "Move Straight" [Class 0]</span>;</p>
+                        <p>}</p>
+                    </div>
+                </div>
+
+                <div class="anim-fade-up delay-2 p-3 sm:p-4 bg-cyber-card border border-cyber-border rounded-xl flex flex-col justify-between cyber-card-hover">
+                    <div>
+                        <h3 class="text-xs sm:text-sm font-mono text-emerald-400 uppercase mb-2">Embedded C Code Header Generation</h3>
+                        <div class="p-2.5 sm:p-3 bg-slate-950 rounded-lg border border-slate-800 text-[11px] sm:text-xs font-mono text-slate-300 overflow-x-auto">
+                            <span class="text-purple-400">#ifndef</span> TINYML_MODEL_H<br>
+                            <span class="text-purple-400">#define</span> TINYML_MODEL_H<br><br>
+                            <span class="text-blue-400">static inline int</span> <span class="text-yellow-300">predict_action</span>(<span class="text-blue-400">const float</span>* dist) {<br>
+                              <span class="text-blue-400">if</span> (dist[2] <= 0.9997f) {<br>
+                                <span class="text-blue-400">return</span> (dist[1] <= 4.7937f) ? 1 : 2;<br>
+                              }<br>
+                              <span class="text-blue-400">return</span> 0;<br>
+                            }<br>
+                            <span class="text-purple-400">#endif</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 5: LIVE SIMULATION -->
+        <section class="slide flex-col space-y-2 sm:space-y-3" id="slide-5">
+            <div class="anim-fade-down flex items-center justify-between border-b border-cyber-border pb-2">
+                <div>
+                    <span class="text-[10px] sm:text-xs font-mono text-cyber-accent uppercase tracking-wider">SECTION 04 // LIVE SIMULATION BENCHMARK</span>
+                    <h2 class="text-base sm:text-2xl font-bold text-white">Closed-Loop Raycasting Pygame-CE Simulation Environment</h2>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="sim-reset-btn" class="px-2 sm:px-3 py-1 bg-cyber-card hover:bg-cyber-border border border-cyber-border text-[10px] sm:text-xs font-mono text-cyber-accent rounded transition">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> Reset
+                    </button>
+                    <button id="sim-pause-btn" class="px-2 sm:px-3 py-1 bg-cyber-card hover:bg-cyber-border border border-cyber-border text-[10px] sm:text-xs font-mono text-emerald-400 rounded transition">
+                        <i class="fa-solid fa-pause mr-1"></i> Pause
+                    </button>
+                </div>
+            </div>
+
+            <div class="anim-scale-in delay-1 relative w-full flex-1 bg-slate-950 border border-cyber-border rounded-xl overflow-hidden flex items-center justify-center min-h-[260px] sm:min-h-[360px] cyber-card-hover">
+                <canvas id="simCanvas" class="w-full h-full block" width="1214" height="534"></canvas>
+            </div>
+        </section>
+
+        <!-- SLIDE 6: BENCHMARKS -->
+        <section class="slide flex-col justify-center space-y-4 sm:space-y-6" id="slide-6">
+            <div class="anim-fade-down border-b border-cyber-border pb-2 sm:pb-3">
+                <span class="text-[10px] sm:text-xs font-mono text-cyber-accent uppercase tracking-wider">SECTION 05 // HARDWARE TELEMETRY</span>
+                <h2 class="text-xl sm:text-3xl font-bold text-white mt-0.5">Resource Overhead & Microcontroller Benchmarks</h2>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                <div class="anim-fade-up delay-1 p-3 sm:p-5 bg-cyber-card border border-cyber-border rounded-xl text-center space-y-1 sm:space-y-2 cyber-card-hover">
+                    <i class="fa-solid fa-bolt text-cyber-accent text-xl sm:text-2xl"></i>
+                    <p class="text-[10px] sm:text-xs font-mono text-cyber-subtext uppercase">Avg Inference Latency</p>
+                    <p class="text-xl sm:text-3xl font-extrabold text-white font-mono glow-accent">1.2 <span class="text-xs sm:text-sm font-normal text-cyber-accent">µs</span></p>
+                </div>
+
+                <div class="anim-fade-up delay-2 p-3 sm:p-5 bg-cyber-card border border-cyber-border rounded-xl text-center space-y-1 sm:space-y-2 cyber-card-hover">
+                    <i class="fa-solid fa-microchip text-emerald-400 text-xl sm:text-2xl"></i>
+                    <p class="text-[10px] sm:text-xs font-mono text-cyber-subtext uppercase">Flash Memory Footprint</p>
+                    <p class="text-xl sm:text-3xl font-extrabold text-white font-mono glow-green">0.5 <span class="text-xs sm:text-sm font-normal text-emerald-400">KB</span></p>
+                </div>
+
+                <div class="anim-fade-up delay-3 p-3 sm:p-5 bg-cyber-card border border-cyber-border rounded-xl text-center space-y-1 sm:space-y-2 cyber-card-hover">
+                    <i class="fa-solid fa-memory text-blue-400 text-xl sm:text-2xl"></i>
+                    <p class="text-[10px] sm:text-xs font-mono text-cyber-subtext uppercase">Dynamic RAM Usage</p>
+                    <p class="text-xl sm:text-3xl font-extrabold text-white font-mono">52 <span class="text-xs sm:text-sm font-normal text-blue-400">Bytes</span></p>
+                </div>
+
+                <div class="anim-fade-up delay-4 p-3 sm:p-5 bg-cyber-card border border-cyber-border rounded-xl text-center space-y-1 sm:space-y-2 cyber-card-hover">
+                    <i class="fa-solid fa-gauge-high text-purple-400 text-xl sm:text-2xl"></i>
+                    <p class="text-[10px] sm:text-xs font-mono text-cyber-subtext uppercase">Target Clock Frequency</p>
+                    <p class="text-xl sm:text-3xl font-extrabold text-white font-mono">84 <span class="text-xs sm:text-sm font-normal text-purple-400">MHz</span></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 7: SENSOR PHYSICS -->
+        <section class="slide flex-col justify-center space-y-4 sm:space-y-6" id="slide-7">
+            <div class="anim-fade-down border-b border-cyber-border pb-2 sm:pb-3">
+                <span class="text-[10px] sm:text-xs font-mono text-cyber-accent uppercase tracking-wider">SECTION 06 // SPATIAL PHYSICS</span>
+                <h2 class="text-xl sm:text-3xl font-bold text-white mt-0.5">Raycasting Mathematics & Spatial Collision Logic</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <div class="anim-fade-up delay-1 p-4 sm:p-5 bg-cyber-card border border-cyber-border rounded-xl space-y-3 cyber-card-hover">
+                    <h3 class="text-sm sm:text-base font-semibold text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-calculator text-cyber-accent"></i>
+                        <span>Trigonometric Ray Formulation</span>
+                    </h3>
+                    <div class="p-3 bg-cyber-bg border border-cyber-border rounded-lg text-xs font-mono text-cyber-accent space-y-1">
+                        <p>θ_abs = θ_drone + α_sensor</p>
+                        <p>P_x(step) = X_drone + step · cos(θ_abs)</p>
+                        <p>P_y(step) = Y_drone + step · sin(θ_abs)</p>
+                    </div>
+                </div>
+
+                <div class="anim-fade-up delay-2 p-4 sm:p-5 bg-cyber-card border border-cyber-border rounded-xl space-y-3 cyber-card-hover">
+                    <h3 class="text-sm sm:text-base font-semibold text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-vector-square text-emerald-400"></i>
+                        <span>AABB Polygon Collision Detection</span>
+                    </h3>
+                    <div class="p-3 bg-cyber-bg border border-cyber-border rounded-lg text-xs font-mono text-cyber-subtext space-y-1">
+                        <p class="text-white">// Point in Rectangle Evaluation</p>
+                        <p><span class="text-blue-400">if</span> (px ≥ wall.x && px ≤ wall.x + wall.w)</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 8: EXPERIMENTAL RESULTS -->
+        <section class="slide flex-col justify-center space-y-4 sm:space-y-6" id="slide-8">
+            <div class="anim-fade-down border-b border-cyber-border pb-2 sm:pb-3">
+                <span class="text-[10px] sm:text-xs font-mono text-cyber-accent uppercase tracking-wider">SECTION 07 // EXPERIMENTAL RESULTS</span>
+                <h2 class="text-xl sm:text-3xl font-bold text-white mt-0.5">Rule-Based vs. TinyML Performance Benchmark</h2>
+            </div>
+
+            <div class="anim-scale-in delay-1 p-4 bg-cyber-card border border-cyber-border rounded-xl cyber-card-hover">
+                <h3 class="text-xs font-mono text-cyber-accent uppercase mb-3">Model Accuracy Comparison</h3>
+                <div class="space-y-3">
+                    <div>
+                        <div class="flex justify-between text-xs font-mono text-cyber-subtext mb-1">
+                            <span>TinyML Decision Tree (Depth 5)</span>
+                            <span class="text-emerald-400">98.4% Success Rate</span>
+                        </div>
+                        <div class="w-full h-2 bg-cyber-bg rounded-full overflow-hidden border border-cyber-border">
+                            <div class="h-full bg-emerald-400 rounded-full" style="width: 98.4%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs font-mono text-cyber-subtext mb-1">
+                            <span>Rule-Based Heuristic</span>
+                            <span class="text-yellow-400">82.1% Success Rate</span>
+                        </div>
+                        <div class="w-full h-2 bg-cyber-bg rounded-full overflow-hidden border border-cyber-border">
+                            <div class="h-full bg-yellow-400 rounded-full" style="width: 82.1%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 9: FUTURE SCOPE -->
+        <section class="slide flex-col justify-center space-y-4 sm:space-y-6" id="slide-9">
+            <div class="anim-fade-down border-b border-cyber-border pb-2 sm:pb-3">
+                <span class="text-[10px] sm:text-xs font-mono text-cyber-accent uppercase tracking-wider">SECTION 08 // HARDWARE DEPLOYMENT</span>
+                <h2 class="text-xl sm:text-3xl font-bold text-white mt-0.5">Real-World Hardware Porting & Future Scope</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+                <div class="anim-fade-up delay-1 p-4 sm:p-5 bg-cyber-card border border-cyber-border rounded-xl space-y-2 sm:space-y-3 cyber-card-hover">
+                    <i class="fa-solid fa-microchip text-cyber-accent text-xl sm:text-2xl"></i>
+                    <h3 class="font-bold text-white text-sm sm:text-base">STM32 Flashing</h3>
+                    <p class="text-xs text-cyber-subtext">Direct C-header deployment onto FreeRTOS tasks.</p>
+                </div>
+                <div class="anim-fade-up delay-2 p-4 sm:p-5 bg-cyber-card border border-cyber-border rounded-xl space-y-2 sm:space-y-3 cyber-card-hover">
+                    <i class="fa-solid fa-rss text-emerald-400 text-xl sm:text-2xl"></i>
+                    <h3 class="font-bold text-white text-sm sm:text-base">ToF Sensors</h3>
+                    <p class="text-xs text-cyber-subtext">Connecting physical VL53L1X rangefinders over I2C.</p>
+                </div>
+                <div class="anim-fade-up delay-3 p-4 sm:p-5 bg-cyber-card border border-cyber-border rounded-xl space-y-2 sm:space-y-3 cyber-card-hover">
+                    <i class="fa-solid fa-cube text-purple-400 text-xl sm:text-2xl"></i>
+                    <h3 class="font-bold text-white text-sm sm:text-base">3D Flight Expansion</h3>
+                    <p class="text-xs text-cyber-subtext">Extending navigation trees to 6-DOF controls.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 10: CONCLUSION -->
+        <section class="slide flex-col justify-center items-center text-center space-y-4 sm:space-y-6" id="slide-10">
+            <div class="anim-fade-down inline-flex items-center space-x-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-emerald-400 text-[11px] sm:text-xs font-mono">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>SUMMARY & DEFENSE CONCLUSION</span>
+            </div>
+
+            <h2 class="anim-fade-up delay-1 text-2xl sm:text-4xl font-extrabold text-white max-w-3xl">
+                Ultra-Low Latency Edge Intelligence Accomplished
+            </h2>
+
+            <div class="anim-scale-in delay-2 p-4 sm:p-6 bg-cyber-card border border-cyber-accent/40 rounded-2xl max-w-xl w-full space-y-3 sm:space-y-4 cyber-card-hover">
+                <h3 class="text-base sm:text-lg font-bold text-cyber-accent font-mono">Thank You for Your Attention!</h3>
+                <div class="p-3 bg-cyber-bg border border-cyber-border rounded-xl text-left text-xs font-mono space-y-1">
+                    <p class="text-white font-semibold">Presenter: <span class="text-cyber-accent">Md. Mohtasim Billah</span> (ID: 2024100011006)</p>
+                    <p class="text-cyber-subtext">Dept. of Computer Science & Engineering, Southeast University</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER & NAV (FIXED & RESPONSIVE FOR MOBILE) -->
+    <footer class="h-16 border-t border-cyber-border bg-cyber-bg/95 backdrop-blur px-4 sm:px-6 flex items-center justify-between z-30">
+        <div class="flex items-center space-x-2 sm:space-x-4">
+            <button id="prev-btn" class="px-3 sm:px-4 py-2 bg-cyber-card hover:bg-cyber-border border border-cyber-border text-cyber-text hover:text-white rounded-lg text-xs font-mono transition flex items-center space-x-1 sm:space-x-2 active:bg-cyber-border">
+                <i class="fa-solid fa-chevron-left"></i>
+                <span>PREV</span>
+            </button>
+            <button id="next-btn" class="px-3 sm:px-4 py-2 bg-cyber-accent/20 hover:bg-cyber-accent/30 border border-cyber-accent/40 text-cyber-accent rounded-lg text-xs font-mono transition flex items-center space-x-1 sm:space-x-2 active:bg-cyber-accent/40">
+                <span>NEXT</span>
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+            <span class="text-xs font-mono text-cyber-subtext ml-1 sm:ml-0">
+                <span id="current-slide-num" class="text-cyber-accent font-bold">1</span> / 10
+            </span>
+        </div>
+
+        <div class="hidden md:flex items-center space-x-1.5" id="dots-container"></div>
+
+        <button id="fullscreen-btn" class="p-2 text-cyber-subtext hover:text-cyber-accent transition text-sm">
+            <i class="fa-solid fa-expand"></i>
+        </button>
+    </footer>
+
+    <!-- TOP PROGRESS BAR -->
+    <div class="w-full bg-cyber-card h-1 fixed top-14 left-0 z-30">
+        <div id="progress-bar" class="h-full bg-gradient-to-r from-cyber-accent via-blue-500 to-emerald-400 transition-all duration-300" style="width: 10%;"></div>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 10;
+
+        const slideNumDisplay = document.getElementById('current-slide-num');
+        const progressBar = document.getElementById('progress-bar');
+        const dotsContainer = document.getElementById('dots-container');
+
+        for (let i = 1; i <= totalSlides; i++) {
+            const dot = document.createElement('button');
+            dot.className = `w-2.5 h-2.5 rounded-full transition-all ${i === 1 ? 'bg-cyber-accent w-6' : 'bg-cyber-border hover:bg-cyber-subtext'}`;
+            dot.addEventListener('click', () => goToSlide(i));
+            dotsContainer.appendChild(dot);
+        }
+
+        function updateSlideUI() {
+            document.querySelectorAll('.slide').forEach((slide, index) => {
+                if (index + 1 === currentSlide) {
+                    slide.classList.add('active');
+                } else {
+                    slide.classList.remove('active');
+                }
+            });
+
+            slideNumDisplay.innerText = currentSlide;
+            progressBar.style.width = `${(currentSlide / totalSlides) * 100}%`;
+
+            Array.from(dotsContainer.children).forEach((dot, index) => {
+                if (index + 1 === currentSlide) {
+                    dot.className = 'w-6 h-2.5 bg-cyber-accent rounded-full transition-all';
+                } else {
+                    dot.className = 'w-2.5 h-2.5 bg-cyber-border hover:bg-cyber-subtext rounded-full transition-all';
+                }
+            });
+
+            if (currentSlide === 5) {
+                setTimeout(resizeCanvas, 50);
+            }
+        }
+
+        function goToSlide(num) {
+            if (num >= 1 && num <= totalSlides) {
+                currentSlide = num;
+                updateSlideUI();
+            }
+        }
+
+        document.getElementById('prev-btn').addEventListener('click', () => goToSlide(currentSlide - 1));
+        document.getElementById('next-btn').addEventListener('click', () => goToSlide(currentSlide + 1));
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                goToSlide(currentSlide + 1);
+            } else if (e.key === 'ArrowLeft') {
+                goToSlide(currentSlide - 1);
+            }
+        });
+
+        // Touch Swipe Support for Mobile Devices
+        let touchStartX = 0;
+        let touchEndX = 0;
+        document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
+        document.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            if (touchStartX - touchEndX > 50) goToSlide(currentSlide + 1);
+            if (touchEndX - touchStartX > 50) goToSlide(currentSlide - 1);
+        }, {passive: true});
+
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('current-time').innerText = now.toTimeString().split(' ')[0];
+        }, 1000);
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen().catch(() => {});
+            }
+        }
+        document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+
+        // ---------------------------------------------------------
+        // FULL CANVAS ENGINE (FIXED FULL RENDERING LOOP)
+        // ---------------------------------------------------------
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        let isSimRunning = true;
+
+        document.getElementById('sim-pause-btn').addEventListener('click', () => { isSimRunning = !isSimRunning; });
+
+        function resizeCanvas() {
+            if (!canvas.parentElement) return;
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let drone = {
+            x: 650, y: 350, angle: -30, speed: 1.8,
+            sensorAngles: [-90, -45, 0, 45, 90],
+            sensorDistances: [0, 0, 0, 0, 0],
+            hitPoints: [{x:0,y:0}, {x:0,y:0}, {x:0,y:0}, {x:0,y:0}, {x:0,y:0}],
+            lastAction: "Move Straight", actionClass: 0
+        };
+
+        document.getElementById('sim-reset-btn').addEventListener('click', () => {
+            drone.x = canvas.width / 2; drone.y = canvas.height / 2; drone.angle = -30;
+        });
+
+        function getWalls(width, height) {
+            return [
+                {x: 0, y: 0, w: width, h: 14},
+                {x: 0, y: 0, w: 14, h: height},
+                {x: 0, y: height - 14, w: width, h: 14},
+                {x: width - 14, y: 0, w: 14, h: height},
+                {x: width * 0.35, y: height * 0.15, w: width * 0.28, h: height * 0.1},
+                {x: width * 0.72, y: height * 0.2, w: width * 0.16, h: height * 0.35},
+                {x: width * 0.35, y: height * 0.35, w: width * 0.2, h: height * 0.07},
+                {x: width * 0.15, y: height * 0.55, w: width * 0.12, h: height * 0.38},
+                {x: width * 0.35, y: height * 0.55, w: width * 0.04, h: height * 0.35},
+                {x: width * 0.45, y: height * 0.68, w: width * 0.24, h: height * 0.07},
+                {x: width * 0.74, y: height * 0.68, w: width * 0.14, h: height * 0.22}
+            ];
+        }
+
+        function castRay(droneX, droneY, angleDeg, maxRange, walls) {
+            const rad = angleDeg * (Math.PI / 180);
+            const dx = Math.cos(rad); const dy = Math.sin(rad);
+
+            for (let step = 1; step < maxRange; step++) {
+                const px = droneX + dx * step; const py = droneY + dy * step;
+                for (let wall of walls) {
+                    if (px >= wall.x && px <= wall.x + wall.w && py >= wall.y && py <= wall.y + wall.h) {
+                        return { distM: (step / 50.0).toFixed(1), hitX: px, hitY: py };
+                    }
+                }
+            }
+            return { distM: (maxRange / 50.0).toFixed(1), hitX: droneX + dx * maxRange, hitY: droneY + dy * maxRange };
+        }
+
+        function predictAction(distances) {
+            const [dL90, dL45, dFront, dR45, dR90] = distances.map(Number);
+            if (dFront <= 1.0) {
+                if (dL45 <= 4.8) {
+                    if (dR90 <= 4.9) return { action: "Turn Left", class: 1 };
+                    else return { action: "Turn Right", class: 2 };
+                } else {
+                    if (dL45 <= 0.8) return { action: "Turn Right", class: 2 };
+                    else return { action: "Turn Left", class: 1 };
+                }
+            } else if (dR45 <= 0.8) {
+                return { action: "Turn Left", class: 1 };
+            } else {
+                return { action: "Move Straight", class: 0 };
+            }
+        }
+
+        function animLoop() {
+            if (currentSlide === 5) {
+                const W = canvas.width || 800; const H = canvas.height || 450;
+                const walls = getWalls(W, H);
+
+                if (isSimRunning) {
+                    const sensorNames = ["dL90", "dL45", "dFront", "dR45", "dR90"];
+                    drone.sensorAngles.forEach((relAngle, idx) => {
+                        const res = castRay(drone.x, drone.y, drone.angle + relAngle, 320, walls);
+                        drone.sensorDistances[idx] = res.distM;
+                        drone.hitPoints[idx] = { x: res.hitX, y: res.hitY };
+                    });
+
+                    const pred = predictAction(drone.sensorDistances);
+                    drone.lastAction = pred.action; drone.actionClass = pred.class;
+
+                    if (drone.actionClass === 1) drone.angle -= 2.0;
+                    else if (drone.actionClass === 2) drone.angle += 2.0;
+
+                    const rad = drone.angle * (Math.PI / 180);
+                    const nextX = drone.x + drone.speed * Math.cos(rad);
+                    const nextY = drone.y + drone.speed * Math.sin(rad);
+
+                    let collided = false;
+                    for (let wall of walls) {
+                        if (nextX >= wall.x && nextX <= wall.x + wall.w && nextY >= wall.y && nextY <= wall.y + wall.h) {
+                            collided = true; break;
+                        }
+                    }
+
+                    if (!collided) { drone.x = nextX; drone.y = nextY; }
+                    else { drone.angle += 15.0; }
+                }
+
+                // Render Background
+                ctx.fillStyle = "#E4E9ED"; ctx.fillRect(0, 0, W, H);
+
+                // Grid
+                ctx.strokeStyle = "#CBD5E1"; ctx.lineWidth = 1;
+                for (let x = 0; x < W; x += 35) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+                }
+                for (let y = 0; y < H; y += 35) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+                }
+
+                // Render Walls
+                walls.forEach(w => {
+                    ctx.fillStyle = "#555F69"; ctx.fillRect(w.x, w.y, w.w, w.h);
+                    ctx.strokeStyle = "#283037"; ctx.lineWidth = 2; ctx.strokeRect(w.x, w.y, w.w, w.h);
+                    ctx.fillStyle = "#78828C"; ctx.fillRect(w.x + 2, w.y + 2, w.w - 4, 3);
+                });
+
+                // Render Rays
+                const sensorNames = ["dL90", "dL45", "dFront", "dR45", "dR90"];
+                drone.hitPoints.forEach((hp, i) => {
+                    ctx.strokeStyle = (i === 2) ? "#10B981" : "#1D4ED8";
+                    ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(drone.x, drone.y); ctx.lineTo(hp.x, hp.y); ctx.stroke();
+
+                    ctx.fillStyle = "#EF4444";
+                    ctx.beginPath(); ctx.arc(hp.x, hp.y, 4, 0, Math.PI * 2); ctx.fill();
+
+                    ctx.fillStyle = "#0F172A";
+                    ctx.font = "bold 11px Arial";
+                    ctx.fillText(`${sensorNames[i]}: ${drone.sensorDistances[i]}m`, hp.x + 6, hp.y - 4);
+                });
+
+                // Render Drone
+                ctx.save();
+                ctx.translate(drone.x, drone.y);
+                ctx.rotate(drone.angle * (Math.PI / 180));
+
+                ctx.strokeStyle = "#1E293B"; ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.moveTo(-16, -16); ctx.lineTo(16, 16); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-16, 16); ctx.lineTo(16, -16); ctx.stroke();
+
+                [[-16,-16], [16,-16], [-16,16], [16,16]].forEach(([rx, ry]) => {
+                    ctx.fillStyle = "#E2E8F0";
+                    ctx.beginPath(); ctx.arc(rx, ry, 8, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = "#0F172A"; ctx.lineWidth = 1.5; ctx.stroke();
+                });
+
+                ctx.fillStyle = "#334155";
+                ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#EF4444";
+                ctx.beginPath(); ctx.arc(14, 0, 4, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+
+                // Render Terminal HUD
+                const hudW = W < 500 ? 250 : 320;
+                const hudH = W < 500 ? 175 : 195;
+                ctx.fillStyle = "rgba(20, 24, 28, 0.95)";
+                ctx.fillRect(10, 10, hudW, hudH);
+                ctx.strokeStyle = "#E2E8F0"; ctx.lineWidth = 2;
+                ctx.strokeRect(10, 10, hudW, hudH);
+
+                ctx.font = W < 500 ? "bold 10px Courier, monospace" : "bold 12px Courier, monospace";
+                const lines = [
+                    { text: "TinyML Drone Simulation v1.0", col: "#FFFFFF" },
+                    { text: "----------------------------------", col: "#64748B" },
+                    { text: "Status: Navigating", col: "#10B981" },
+                    { text: "Active Model: `tinyml_model.h`", col: "#38BDF8" },
+                    { text: `Prediction: [${drone.lastAction}]`, col: "#FFFFFF" },
+                    { text: "Sensor Array: 5-Directional", col: "#E2E8F0" },
+                    { text: "Avg Latency: 1.2µs", col: "#10B981" },
+                    { text: "Memory: 0.5KB Flash | 52B RAM", col: "#10B981" },
+                    { text: "Clock: 84MHz (STM32F401)", col: "#38BDF8" }
+                ];
+
+                lines.forEach((l, idx) => {
+                    ctx.fillStyle = l.col;
+                    ctx.fillText(l.text, 18, 25 + (idx * (W < 500 ? 17 : 19)));
+                });
+            }
+            requestAnimationFrame(animLoop);
+        }
+
+        updateSlideUI();
+        requestAnimationFrame(animLoop);
+    </script>
+</body>
+</html>
